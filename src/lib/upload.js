@@ -229,6 +229,19 @@ export function putToSignedUrl(url, body, { onProgress, contentType } = {}) {
         return
       }
       const detail = cosErrorDetail(xhr.responseText)
+      // 把最常见的两种 COS 报错翻译成人话，否则用户只会看到一句英文 + HTTP 403
+      if (/Access Key Id/i.test(detail)) {
+        reject(
+          new Error(
+            'COS 密钥无效或已被禁用：请更新 Vercel 环境变量 COS_SECRET_ID / COS_SECRET_KEY 后重新部署',
+          ),
+        )
+        return
+      }
+      if (/SignatureDoesNotMatch/i.test(detail)) {
+        reject(new Error('COS 签名不匹配：COS_SECRET_KEY 与 COS_SECRET_ID 不配套，请重新核对'))
+        return
+      }
       reject(
         new Error(
           `对象存储上传失败（HTTP ${xhr.status}）${detail ? `：${detail}` : ''}`,
