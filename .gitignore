@@ -3,3 +3,7 @@ dist/
 .env
 .env.local
 *.log
+
+# dist/ 是通用规则，会误伤 public/m/dist 下的音乐播放器垫片；
+# 这个文件必须进仓库，否则线上 /music 加载不到组件脚本。
+!public/m/dist/
