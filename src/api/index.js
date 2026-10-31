@@ -151,6 +151,8 @@ export const adminApi = {
   videos: (params) => http.get('/admin/videos', { params }),
   setVideoStatus: (id, status) => http.post(`/admin/videos/${id}/status`, { status }),
   removeVideo: (id) => http.delete(`/admin/videos/${id}`),
+  // 批量删除：后端单次最多 200 个，子表在同一个事务里级联清理
+  batchRemoveVideos: (ids) => http.post('/admin/videos/batch-delete', { ids }),
   comments: (params) => http.get('/admin/comments', { params }),
   removeComment: (id) => http.delete(`/admin/comments/${id}`),
   danmaku: (params) => http.get('/admin/danmaku', { params }),

@@ -72,6 +72,30 @@ async function submitBatch() {
   }
 }
 
+// 批量删除（勾选多行 → 一次提交，后端用事务级联清理子表）
+async function batchRemove() {
+  if (!selected.value.length) return ElMessage.warning('请先勾选要删除的视频')
+  if (selected.value.length > 200) return ElMessage.warning('单次最多删除 200 个视频，请分批操作')
+  const n = selected.value.length
+  try {
+    await ElMessageBox.confirm(
+      `确定永久删除选中的 ${n} 个视频？其评论、弹幕、点赞、收藏、观看记录会一并删除，且不可恢复。`,
+      '批量删除确认',
+      { type: 'error', confirmButtonText: '全部删除', cancelButtonText: '取消' },
+    )
+  } catch {
+    return
+  }
+  try {
+    const d = await adminApi.batchRemoveVideos(selected.value.map((v) => v.id))
+    ElMessage.success(d.message || `已删除 ${n} 个视频`)
+    selected.value = []
+    load()
+  } catch (e) {
+    ElMessage.error(e.message)
+  }
+}
+
 async function load() {
   loading.value = true
   try {
@@ -138,6 +162,11 @@ const fmt = (ts) => timeAgo(ts)
         :disabled="!selected.length"
         @click="batchDialog = true"
       >批量分配到合集<span v-if="selected.length" class="sel-count">({{ selected.length }})</span></button>
+      <button
+        class="btn btn-danger"
+        :disabled="!selected.length"
+        @click="batchRemove"
+      >批量删除<span v-if="selected.length" class="sel-count">({{ selected.length }})</span></button>
       <span class="total-text">共 {{ total }} 个视频</span>
     </div>
 
@@ -309,6 +338,9 @@ const fmt = (ts) => timeAgo(ts)
 .col-episode { font-size: 12px; color: var(--text-dim); font-family: var(--font-syne); }
 .cell-faint { font-size: 12px; color: var(--text-faint); }
 .sel-count { font-family: var(--font-syne); margin-left: 2px; }
+.toolbar .btn-danger { color: #f56c6c; border-color: color-mix(in srgb, #f56c6c 45%, transparent); }
+.toolbar .btn-danger:hover:not(:disabled) { background: #f56c6c; color: #fff; }
+.toolbar .btn-danger:disabled { opacity: 0.45; cursor: not-allowed; }
 .dialog-form { padding: 4px 2px; }
 .dialog-hint { margin-top: 6px; font-size: 12px; color: var(--text-faint); }
 .status-pill { font-size: 12px; padding: 2px 10px; border-radius: 999px; font-weight: 600; }
