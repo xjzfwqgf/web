@@ -1,0 +1,406 @@
+/* ============================================================
+   夜场 · Apple 风格设计系统
+   ============================================================ */
+/* 浅色为默认值；暗色由 <html data-theme="dark"> 覆盖。
+   切换由 html[data-theme] 触发（stores/theme.js applyTheme） */
+:root {
+  /* Apple 表面色 */
+  --bg: #f5f5f7;
+  --bg-soft: #f0f0f4;
+  --surface: #ffffff;
+  --surface-2: #f5f5f7;
+  --surface-3: #e8e8ed;
+  --border: rgba(60, 60, 67, 0.12);       /* 发丝线 */
+  --border-strong: rgba(60, 60, 67, 0.24);
+
+  /* Apple 墨色 / 灰阶 */
+  --text: #1d1d1f;
+  --text-dim: #6e6e73;
+  --text-faint: #86868b;
+
+  /* Apple 蓝 + 语义扩展 */
+  --accent: #0071e3;
+  --accent-strong: #0060df;               /* 强调/悬停文字（浅底更深） */
+  --accent-hover: #0077ed;                /* 按钮悬停 */
+  --accent-rose: #ff3b30;                 /* Apple 红 · 次要强调/危险 */
+  --accent-text: #ffffff;                 /* 蓝色面上的文字 */
+  --accent-soft: rgba(0, 113, 227, 0.1);  /* 蓝 tint 底 */
+  --rose-soft: rgba(255, 59, 48, 0.1);
+  --accent-glow: rgba(0, 113, 227, 0.16);
+  --rose-glow: rgba(255, 59, 48, 0.18);
+
+  /* 玻璃 chrome */
+  --nav-bg: rgba(255, 255, 255, 0.66);
+  --nav-bg-solid: rgba(255, 255, 255, 0.86);
+  --footer-bg: rgba(0, 0, 0, 0.03);
+
+  --radius: 18px;
+  --radius-sm: 12px;
+  --radius-xs: 8px;
+  --focus-ring: 0 0 0 4px rgba(0, 113, 227, 0.16);
+  --shadow-card: 0 8px 24px rgba(0, 0, 0, 0.08);
+  --shadow-card-lg: 0 24px 48px rgba(0, 0, 0, 0.12);
+  --shadow-pop: 0 24px 60px rgba(0, 0, 0, 0.16);
+
+  /* 苹果绿（成功/已处理） */
+  --accent-green: #30d158;
+
+  /* 系统字体栈（保留变量名，全站自动切换） */
+  --font-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", "PingFang SC", "Microsoft YaHei", sans-serif;
+  /* 名字有误导：实为 SF Pro Text 系统栈（非 Syne 自定义字体）。如需真字体可在此替换。 */
+  --font-syne: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", "PingFang SC", "Microsoft YaHei", sans-serif;
+  --font-body: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", "PingFang SC", "Microsoft YaHei", sans-serif;
+
+  color-scheme: light;
+}
+
+/* 暗色主题：覆盖全部设计变量。切换由 <html data-theme="dark"> 触发 */
+html[data-theme='dark'] {
+  --bg: #000000;
+  --bg-soft: #1c1c1e;
+  --surface: #1c1c1e;
+  --surface-2: #2c2c2e;
+  --surface-3: #3a3a3c;
+  --border: rgba(255, 255, 255, 0.1);
+  --border-strong: rgba(255, 255, 255, 0.2);
+
+  --text: #f5f5f7;
+  --text-dim: #a1a1a6;
+  --text-faint: #6e6e73;
+
+  --accent: #2997ff;
+  --accent-strong: #5ac8fa;
+  --accent-hover: #3da8ff;
+  --accent-rose: #ff453a;
+  --accent-text: #ffffff;
+  --accent-soft: rgba(41, 151, 255, 0.16);
+  --rose-soft: rgba(255, 69, 58, 0.16);
+  --accent-glow: rgba(41, 151, 255, 0.25);
+  --rose-glow: rgba(255, 69, 58, 0.22);
+
+  --nav-bg: rgba(22, 22, 24, 0.66);
+  --nav-bg-solid: rgba(22, 22, 24, 0.88);
+  --footer-bg: rgba(0, 0, 0, 0.3);
+
+  --radius: 18px;
+  --radius-sm: 12px;
+  --radius-xs: 8px;
+  --focus-ring: 0 0 0 4px rgba(41, 151, 255, 0.25);
+  --shadow-card: 0 12px 32px rgba(0, 0, 0, 0.55);
+  --shadow-card-lg: 0 24px 48px rgba(0, 0, 0, 0.7);
+  --shadow-pop: 0 24px 60px rgba(0, 0, 0, 0.7);
+
+  --accent-green: #32d74b;
+
+  color-scheme: dark;
+}
+
+/* ---------- Element Plus → Apple 蓝 ---------- */
+:root {
+  --el-color-primary: #0071e3;
+  --el-color-primary-light-3: #4c9ceb;
+  --el-color-primary-light-5: #85b9f1;
+  --el-color-primary-light-7: #bcd8f7;
+  --el-color-primary-light-8: #d2e6fa;
+  --el-color-primary-light-9: #ecf5fe;
+  --el-color-primary-dark-2: #005bb3;
+  --el-color-danger: #ff3b30;
+  --el-color-danger-light-3: #ff6b62;
+  --el-color-danger-light-5: #ff9b95;
+  --el-color-danger-light-7: #ffc9c7;
+  --el-color-danger-light-8: #ffdcdb;
+  --el-color-danger-light-9: #ffefee;
+  --el-color-danger-dark-2: #d92c23;
+  --el-border-radius-base: 10px;
+  --el-border-radius-round: 999px;
+  --el-font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", "PingFang SC", "Microsoft YaHei", sans-serif;
+
+  /* 表面 / 文字 / 边框映射到 Apple 变量 */
+  --el-bg-color: #ffffff;
+  --el-bg-color-overlay: #ffffff;
+  --el-fill-color-blank: #ffffff;
+  --el-text-color-primary: var(--text);
+  --el-text-color-regular: var(--text-dim);
+  --el-border-color: var(--border);
+  --el-color-success: var(--accent-green);
+  --el-color-warning: #ff9f0a;
+}
+html[data-theme='dark'] {
+  --el-color-primary: #2997ff;
+  --el-color-primary-light-3: #55abff;
+  --el-color-primary-light-5: #80bfff;
+  --el-color-primary-light-7: #aad4ff;
+  --el-color-primary-light-8: #c0dfff;
+  --el-color-primary-light-9: #d9ecff;
+  --el-color-primary-dark-2: #1f78cc;
+  --el-color-danger: #ff453a;
+  --el-color-danger-dark-2: #cc3730;
+
+  /* 表面 / 文字 / 边框映射到 Apple 变量 */
+  --el-bg-color: #1c1c1e;
+  --el-bg-color-overlay: #2c2c2e;
+  --el-fill-color-blank: #1c1c1e;
+  --el-text-color-primary: var(--text);
+  --el-text-color-regular: var(--text-dim);
+  --el-border-color: var(--border);
+  --el-color-success: var(--accent-green);
+  --el-color-warning: #ff9f0a;
+}
+
+/* el-table：表面/边框/悬停色映射到 Apple 变量（原在 5 个 admin 页重复，上提为全局） */
+.el-table {
+  --el-table-bg-color: var(--surface);
+  --el-table-tr-bg-color: var(--surface);
+  --el-table-header-bg-color: var(--surface-2);
+  --el-table-border-color: var(--border);
+  --el-table-row-hover-bg-color: var(--surface-2);
+}
+.el-table th.el-table__cell { color: var(--text-dim); }
+.el-table td.el-table__cell { color: var(--text); }
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body { height: 100%; }
+
+body {
+  font-family: var(--font-body);
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  overflow-y: scroll;
+  /* 主题切换过渡：避免亮↔暗硬切（Apple 原则14）。只过渡颜色，不碰 transform —— 带 transform 元素会劫持 position:fixed（详见 gsap.js clearProps 注释）。 */
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* 顶部氛围光（淡蓝、克制） */
+body::after {
+  content: '';
+  position: fixed;
+  top: -260px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 1000px;
+  height: 480px;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse at center, var(--accent-glow), transparent 60%),
+    radial-gradient(ellipse at 30% 40%, var(--accent-soft), transparent 55%);
+  filter: blur(28px);
+  opacity: 0.46;
+}
+html[data-theme='dark'] body::after { opacity: 0.28; }
+
+a { color: inherit; text-decoration: none; }
+button { font-family: inherit; cursor: pointer; }
+input, textarea, select { font-family: inherit; }
+
+/* 键盘可达性：统一焦点环（全站原本 0 处） */
+:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+  border-radius: var(--radius-sm);
+}
+
+/* 按压反馈：按下即轻微回缩（响应式交互，按压时触发） */
+button:active,
+.btn:active,
+.theme-toggle:active,
+.user-avatar-btn:active {
+  transform: scale(0.97);
+}
+
+::selection { background: var(--accent); color: var(--accent-text); }
+
+/* 滚动条 */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--surface-3); border-radius: 8px; border: 2px solid var(--bg); }
+::-webkit-scrollbar-thumb:hover { background: #48484a; }
+
+/* ---------- 排版 ---------- */
+h1, h2, h3 { font-weight: 800; letter-spacing: -0.02em; }
+
+.display-title {
+  font-family: var(--font-display);
+  font-weight: 800;
+  letter-spacing: -0.015em;
+  line-height: 1.05;
+}
+
+/* 超大 display 排版（apple.com 落地视觉） */
+.hero-title {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: clamp(2.6rem, 5.5vw, 4.5rem);
+  letter-spacing: -0.03em;
+  line-height: 1.04;
+  text-wrap: balance;
+}
+.hero-title em { font-style: normal; color: var(--accent); }
+
+.page-title {
+  font-family: var(--font-syne);
+  font-weight: 800;
+  /* Dynamic Type：随系统字号缩放（rem），超大屏略显收缩（clamp 上限 26px） */
+  font-size: clamp(1.5rem, 2.2vw, 26px);
+  letter-spacing: -0.02em;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.page-title::before {
+  content: '';
+  width: 4px;
+  height: 20px;
+  border-radius: 3px;
+  background: var(--accent);
+}
+
+.eyebrow {
+  font-family: var(--font-syne);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+/* ---------- 容器 ---------- */
+.container {
+  width: 100%;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+/* ---------- 通用按钮 ---------- */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border-radius: 999px;
+  border: 1px solid var(--border-strong);
+  background: var(--surface-2);
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+.btn:hover { background: var(--surface-3); transform: translateY(-1px); }
+.btn:active { transform: translateY(0); }
+
+.btn-primary {
+  background: var(--accent);
+  color: var(--accent-text);
+  border: none;
+  box-shadow: 0 4px 14px var(--accent-glow);
+}
+.btn-primary:hover { background: var(--accent-hover); box-shadow: 0 6px 20px var(--accent-glow); }
+.btn-primary:active { transform: scale(0.98); }
+
+.btn-ghost { background: transparent; }
+
+.btn-rose { color: var(--accent-rose); border-color: var(--rose-soft); }
+.btn-rose:hover { background: var(--rose-soft); }
+
+.btn[disabled] { opacity: 0.5; pointer-events: none; }
+
+/* ---------- 表单 ---------- */
+.field { margin-bottom: 18px; }
+.field label {
+  display: block;
+  font-size: 13px;
+  color: var(--text-dim);
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+.field .input,
+.field textarea {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 14px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  outline: none;
+}
+.field .input:focus,
+.field textarea:focus {
+  border-color: var(--accent);
+  box-shadow: var(--focus-ring);
+}
+.field textarea { resize: vertical; min-height: 90px; }
+
+/* ---------- 空状态 ---------- */
+.empty-state {
+  padding: 64px 0;
+  text-align: center;
+  color: var(--text-faint);
+  font-size: 15px;
+}
+.empty-state .empty-icon { font-size: 44px; margin-bottom: 12px; display: block; opacity: 0.6; }
+
+/* ---------- 动画 ---------- */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(18px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes pop { from { opacity: 0; transform: scale(0.96); } to { opacity: 1; transform: scale(1); } }
+@keyframes pulseGlow {
+  0%, 100% { box-shadow: 0 0 0 0 var(--accent-glow); }
+  50% { box-shadow: 0 0 24px 4px var(--accent-glow); }
+}
+
+.reveal { animation: fadeUp 0.55s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.fade-in { animation: fadeIn 0.35s ease both; }
+
+/* 减弱动效：去掉位移动画，只保留透明交叉淡化 */
+@media (prefers-reduced-motion: reduce) {
+  .reveal, .fade-in, .fadeUp { animation: none; opacity: 1 !important; transform: none !important; }
+  .page-enter-active, .page-leave-active { transition: opacity 0.2s ease; }
+  button:active, .btn:active, .theme-toggle:active, .user-avatar-btn:active { transform: none; }
+  /* 永动/装饰动画：减弱动效时一并关闭（原来漏了这些，滚动/播放时仍扰动） */
+  .hero-play, .eq i, .wm-item { animation: none !important; }
+  .comment-item, .reply-box { animation: none !important; opacity: 1; }
+  .lyr-card { animation: none !important; }
+}
+
+/* 制作歌词弹层：消掉硬切，进出对称（都淡入淡出 + 入场 pop materialize） */
+.lyr-enter-active, .lyr-leave-active { transition: opacity 0.28s ease; }
+.lyr-enter-from, .lyr-leave-to { opacity: 0; }
+.lyr-enter-active .lyr-card { animation: pop 0.32s cubic-bezier(0.22, 1, 0.36, 1); }
+
+/* 路由切换：淡入过渡 */
+.page-enter-active,
+.page-leave-active { transition: opacity 0.28s ease; }
+.page-enter-from,
+.page-leave-to { opacity: 0; }
+
+/* 数字徽标 */
+.stat-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-syne);
+  font-size: 13px;
+  color: var(--text-dim);
+}
+.stat-chip svg { width: 15px; height: 15px; opacity: 0.7; }
+
+/* 时间/信息文字 */
+.meta-text {
+  font-size: 13px;
+  color: var(--text-dim);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
