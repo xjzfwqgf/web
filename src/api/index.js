@@ -110,6 +110,11 @@ export const videoApi = {
   presign: (data) => http.post('/video/presign', data),
   // COS 直传：文件已上传成功后入库
   confirm: (data) => http.post('/video/confirm', data),
+  // 分片上传（>5GB，COS 单次 PUT 上限）：init → 逐片 PUT → complete
+  multipartInit: (data) => http.post('/video/multipart/init', data),
+  multipartSign: (data) => http.post('/video/multipart/sign', data),
+  multipartComplete: (data) => http.post('/video/multipart/complete', data, { timeout: 0 }),
+  multipartAbort: (data) => http.post('/video/multipart/abort', data),
   // 从服务器本机路径导入（仅管理员）。复制大文件 + 服务端 ffmpeg 抽帧远超默认 30s，故不限时。
   importLocal: (data) => http.post('/video/import-local', data, { timeout: 0 }),
   importRoots: () => http.get('/video/import-roots'),

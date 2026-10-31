@@ -20,6 +20,10 @@ const storageMode = ref('loading')
 const maxVideoSize = ref(0) // 后端限制（字节）；0 = 未知，不做前端预检
 const isCos = computed(() => storageMode.value === 'cos')
 
+// COS 单次 PUT 硬上限 5GB：超过就必须走分片上传，否则 COS 直接 400。
+// 用 4.8GB 分界，给「刚好 5GB」留一点余量。
+const SINGLE_PUT_MAX = 4.8 * 1024 ** 3
+
 const pathInput = ref('')
 const moveSource = ref(false) // 导入后删除原文件（仅 path 模式，默认只复制）
 const importRoots = ref([]) // 后端 IMPORT_ALLOWED_DIRS 白名单，用于提示与开关
@@ -234,6 +238,91 @@ async function localUpload(item) {
 }
 
 /**
+ * COS 分片上传（文件 > 5GB 时走这里）。
+ *
+ * 流程：后端 multipartInit 拿 uploadId + partSize → 前端按 partSize 切片，
+ * 每片向后端要一个预签名 URL 后并发 PUT → 全部传完调 complete，由后端 listParts
+ * 汇总 ETag 合并（不依赖浏览器读 ETag，避开桶 CORS 的 ExposeHeaders 配置）。
+ *
+ * 失败重试：uploadId 与已完成分片集合记在 item.mp 上，重试只补没传完的片，
+ * 不会从头再来 10GB。
+ */
+async function cosMultipartUpload(item) {
+  const file = item.file
+  const total = file.size
+
+  if (!item.mp) {
+    const init = await videoApi.multipartInit({
+      filename: file.name,
+      size: total,
+      content_type: file.type || 'video/mp4',
+    })
+    item.mp = {
+      key: init.key,
+      uploadId: init.uploadId,
+      partSize: init.partSize,
+      done: new Set(),
+    }
+  }
+  const mp = item.mp
+  const partCount = Math.max(1, Math.ceil(total / mp.partSize))
+
+  // 进度基线：之前已经传完的分片也要算进去
+  const loaded = new Map()
+  for (const pn of mp.done) {
+    const start = (pn - 1) * mp.partSize
+    loaded.set(pn, Math.min(mp.partSize, total - start))
+  }
+  const report = () => {
+    let sum = 0
+    for (const v of loaded.values()) sum += v
+    item.loaded = sum
+    item.progress = Math.min(92, Math.round((sum / total) * 92))
+  }
+  report()
+
+  const pending = []
+  for (let pn = 1; pn <= partCount; pn++) if (!mp.done.has(pn)) pending.push(pn)
+
+  // 每批签 50 个 URL（后端单次最多 100），每批内 3 个分片并发上传
+  const CONCURRENCY = 3
+  while (pending.length) {
+    const batch = pending.splice(0, 50)
+    const { parts } = await videoApi.multipartSign({
+      key: mp.key,
+      uploadId: mp.uploadId,
+      partNumbers: batch,
+    })
+    const urls = new Map(parts.map((p) => [p.partNumber, p.url]))
+
+    let cursor = 0
+    const workers = Array.from({ length: Math.min(CONCURRENCY, batch.length) }, async () => {
+      while (true) {
+        const pn = batch[cursor++]
+        if (pn === undefined) return
+        const start = (pn - 1) * mp.partSize
+        const blob = file.slice(start, Math.min(total, start + mp.partSize))
+        await putToSignedUrl(urls.get(pn), blob, {
+          contentType: 'application/octet-stream',
+          onProgress: (e) => {
+            loaded.set(pn, Math.min(blob.size, e.loaded || 0))
+            report()
+          },
+        })
+        mp.done.add(pn)
+        loaded.set(pn, blob.size)
+        report()
+      }
+    })
+    await Promise.all(workers)
+  }
+
+  item.progress = 92
+  const done = await videoApi.multipartComplete({ key: mp.key, uploadId: mp.uploadId })
+  item.cosKey = done.key
+}
+
+/**
  * COS 直传：presign → PUT 视频 → [presign → PUT 封面] → confirm 入库。
  *
  * 三个必须守住的点：
@@ -248,20 +337,24 @@ async function cosUpload(item) {
   if (item.metaPromise) await item.metaPromise
   const title = finalTitle(item).slice(0, 80)
 
-  // 1) 视频本体
+  // 1) 视频本体：> 5GB 走分片，否则单次 PUT 直传
   if (!item.cosKey) {
-    const p = await videoApi.presign({ filename: item.file.name, kind: 'video' })
-    await putToSignedUrl(p.url, item.file, {
-      // 预签名没把 Content-Type 签进去，这里可以自由给；给了才能让 CDN 按视频类型返回，
-      // <video> 才不会把它当附件下载
-      contentType: item.file.type || 'application/octet-stream',
-      onProgress: (e) => {
-        // 视频占 0–92%，剩下留给封面和入库确认
-        item.progress = Math.min(92, Math.round((e.loaded / e.total) * 92))
-        item.loaded = e.loaded
-      },
-    })
-    item.cosKey = p.key
+    if (item.file.size > SINGLE_PUT_MAX) {
+      await cosMultipartUpload(item)
+    } else {
+      const p = await videoApi.presign({ filename: item.file.name, kind: 'video' })
+      await putToSignedUrl(p.url, item.file, {
+        // 预签名没把 Content-Type 签进去，这里可以自由给；给了才能让 CDN 按视频类型返回，
+        // <video> 才不会把它当附件下载
+        contentType: item.file.type || 'application/octet-stream',
+        onProgress: (e) => {
+          // 视频占 0–92%，剩下留给封面和入库确认
+          item.progress = Math.min(92, Math.round((e.loaded / e.total) * 92))
+          item.loaded = e.loaded
+        },
+      })
+      item.cosKey = p.key
+    }
   }
 
   // 2) 封面（可选）
