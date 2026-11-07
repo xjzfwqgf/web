@@ -22,7 +22,7 @@ async function submit() {
     const { token, user } = await authApi.login({ username: username.value, password: password.value })
     userStore.setAuth(token, user)
     ElMessage.success(`欢迎回来，${user.nickname}`)
-    router.push(route.query.redirect || { name: 'home' })
+    router.push(route.query.redirect || { name: 'music' })
   } catch (e) {
     ElMessage.error(e.message)
   } finally {
@@ -54,7 +54,7 @@ onMounted(async () => {
     const { user } = await authApi.me()
     userStore.setUser(user)
     ElMessage.success(`欢迎回来，${user.nickname}`)
-    router.replace(route.query.redirect || { name: 'home' })
+    router.replace(route.query.redirect || { name: 'music' })
   } catch (e) {
     userStore.logout()
     ElMessage.error(e.message)

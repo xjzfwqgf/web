@@ -29,7 +29,7 @@ async function submit() {
     })
     userStore.setAuth(token, user)
     ElMessage.success('注册成功，欢迎加入夜场！')
-    router.push({ name: 'home' })
+    router.push({ name: 'music' })
   } catch (e) {
     ElMessage.error(e.message)
   } finally {

@@ -1,49 +1,15 @@
 <script setup>
-import { ref, onMounted, onBeforeUnmount } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
+import { ref } from 'vue'
+import { useRouter } from 'vue-router'
 import { useUserStore } from '../stores/user'
 import { useThemeStore } from '../stores/theme'
-import { videoApi, assetUrl } from '../api'
+import { assetUrl } from '../api'
 
 const router = useRouter()
-const route = useRoute()
 const userStore = useUserStore()
 const themeStore = useThemeStore()
 
-const keyword = ref('')
-const categories = ref([])
-const showSearch = ref(false)
 const showUserMenu = ref(false)
-const scrolled = ref(false)
-
-async function loadCategories() {
-  try {
-    const { list } = await videoApi.categories()
-    categories.value = list
-  } catch {
-    /* 分类加载失败不阻塞 */
-  }
-}
-onMounted(() => {
-  loadCategories()
-  window.addEventListener('scroll', onScroll)
-})
-onBeforeUnmount(() => window.removeEventListener('scroll', onScroll))
-function onScroll() {
-  scrolled.value = window.scrollY > 10
-}
-
-function submitSearch() {
-  const k = keyword.value.trim()
-  if (!k) return
-  router.push({ name: 'search', query: { keyword: k } })
-  if (route.name !== 'search') keyword.value = ''
-  showSearch.value = false
-}
-
-function goCategory(name) {
-  router.push({ name: 'category', params: { name } })
-}
 
 function go(v) {
   showUserMenu.value = false
@@ -53,50 +19,17 @@ function go(v) {
 function logout() {
   userStore.logout()
   showUserMenu.value = false
-  if (route.meta.auth || route.meta.admin) router.push({ name: 'home' })
-  else router.go(0)
+  router.push({ name: 'music' })
 }
 </script>
 
 <template>
-  <header class="navbar" :class="{ scrolled }">
+  <header class="navbar">
     <div class="container navbar-inner">
-      <router-link to="/" class="logo">
-        <span class="logo-mark">▶</span>
-        <span class="logo-text">夜场</span>
+      <router-link to="/music" class="logo">
+        <span class="logo-mark">♪</span>
+        <span class="logo-text">夜场音乐</span>
       </router-link>
-
-      <router-link to="/music" class="music-link" :class="{ active: route.name === 'music' }">
-        <span class="music-ico">🎵</span>
-        <span class="music-label">音乐</span>
-      </router-link>
-
-      <nav class="cat-nav" v-if="categories.length">
-        <button
-          v-for="c in categories.slice(0, 6)"
-          :key="c.name"
-          class="cat-link"
-          :class="{ active: route.name === 'category' && route.params.name === c.name }"
-          @click="goCategory(c.name)"
-        >
-          {{ c.name }}
-        </button>
-      </nav>
-
-      <div class="search-box" :class="{ open: showSearch }">
-        <input
-          v-model="keyword"
-          class="search-input"
-          type="text"
-          placeholder="搜索视频…"
-          @keyup.enter="submitSearch"
-          @focus="showSearch = true"
-          @blur="showSearch = false"
-        />
-        <button class="search-btn" @mousedown.prevent="submitSearch">
-          <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
-        </button>
-      </div>
 
       <div class="nav-actions">
         <button
@@ -106,10 +39,6 @@ function logout() {
           @click="themeStore.toggle()"
         >
           <span class="theme-ico" :class="{ dim: themeStore.theme === 'light' }">{{ themeStore.theme === 'dark' ? '☀️' : '🌙' }}</span>
-        </button>
-
-        <button v-if="userStore.isAdmin()" class="btn btn-primary upload-btn" @click="go({ name: 'upload' })">
-          发布视频
         </button>
 
         <template v-if="userStore.isLoggedIn()">
@@ -130,7 +59,6 @@ function logout() {
                   <span>@{{ userStore.user?.username }}</span>
                 </div>
                 <button class="menu-item" @click="go({ name: 'user' })">👤 个人中心</button>
-                <button v-if="userStore.isAdmin()" class="menu-item" @click="go({ name: 'upload' })">⬆ 发布视频</button>
                 <button v-if="userStore.isAdmin()" class="menu-item admin-item" @click="go({ name: 'admin-dashboard' })">⚙ 后台管理</button>
                 <div class="menu-sep"></div>
                 <button class="menu-item" @click="logout">↪ 退出登录</button>
@@ -159,184 +87,73 @@ function logout() {
   backdrop-filter: blur(20px) saturate(180%);
   -webkit-backdrop-filter: blur(20px) saturate(180%);
   border-bottom: 1px solid var(--border);
-  transition: border-color 0.3s ease, box-shadow 0.3s ease, background-color 0.3s ease;
 }
-.navbar.scrolled {
-  border-bottom-color: var(--border-strong);
-  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.02), 0 8px 24px rgba(0, 0, 0, 0.06);
-  background: var(--nav-bg-solid);
-}
-:global(html[data-theme='dark'] .navbar.scrolled) { box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4); }
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
   .navbar { background: var(--nav-bg-solid); }
 }
 .navbar-inner {
-  height: 76px;
+  height: 64px;
   display: flex;
   align-items: center;
-  gap: 20px;
 }
 
 .logo {
   display: flex;
   align-items: center;
-  gap: 9px;
+  gap: 10px;
   flex-shrink: 0;
 }
 .logo-mark {
-  width: 34px;
-  height: 34px;
+  width: 32px;
+  height: 32px;
   display: grid;
   place-items: center;
-  border-radius: var(--radius-xs);
-  background: var(--accent);
-  color: var(--accent-text);
+  border-radius: 9px;
+  background: linear-gradient(150deg, #ff5d6c, #fa243c);
+  color: #fff;
   font-size: 15px;
-  box-shadow: 0 4px 14px var(--accent-glow);
+  box-shadow: 0 2px 10px rgba(250, 36, 60, 0.28);
 }
 .logo-text {
   font-family: var(--font-display);
-  font-size: 21px;
-  letter-spacing: 0.02em;
-}
-
-.music-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  flex-shrink: 0;
-  padding: 8px 14px;
-  border-radius: 999px;
-  border: 1px solid var(--accent-soft);
-  background: var(--accent-soft);
-  color: var(--accent);
-  font-size: 14px;
+  font-size: 19px;
   font-weight: 700;
-  transition: all 0.2s ease;
-}
-.music-link .music-ico { font-size: 15px; line-height: 1; }
-.music-link:hover {
-  border-color: var(--accent);
-  background: var(--accent-soft);
-  box-shadow: var(--focus-ring);
-}
-.music-link.active {
-  color: var(--accent-text);
-  background: var(--accent);
-  border-color: transparent;
-  box-shadow: 0 4px 14px var(--accent-glow);
-}
-.music-link.active .music-ico { filter: none; }
-
-.cat-nav {
-  display: flex;
-  gap: 4px;
-  flex: 0 1 auto;
-  overflow-x: auto;
-  scrollbar-width: none;
-}
-.cat-nav::-webkit-scrollbar { display: none; }
-.cat-link {
-  border: none;
-  background: transparent;
-  color: var(--text-dim);
-  font-size: 14px;
-  font-weight: 600;
-  padding: 8px 12px;
-  border-radius: 999px;
-  white-space: nowrap;
-  transition: all 0.18s ease;
-  position: relative;
-}
-.cat-link:hover { color: var(--text); }
-.cat-link.active {
-  color: var(--accent);
-  background: var(--accent-soft);
-}
-.cat-link.active::after {
-  content: '';
-  position: absolute;
-  bottom: 2px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: var(--accent);
-}
-
-.search-box {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  transition: all 0.25s ease;
-  max-width: 440px;
-  margin-left: auto;
-}
-.search-box.open {
-  border-color: var(--accent);
-  box-shadow: var(--focus-ring);
-  background: var(--surface-2);
-}
-.search-input {
-  flex: 1;
-  min-width: 0;
-  border: none;
-  background: transparent;
+  letter-spacing: -0.01em;
   color: var(--text);
-  padding: 10px 18px;
-  font-size: 14px;
-  outline: none;
 }
-.search-btn {
-  width: 42px;
-  height: 40px;
-  display: grid;
-  place-items: center;
-  border: none;
-  border-radius: 999px;
-  background: transparent;
-  color: var(--text-dim);
-  transition: color 0.2s;
-}
-.search-btn:hover { color: var(--accent); }
 
 .nav-actions {
   display: flex;
   align-items: center;
   gap: 10px;
   flex-shrink: 0;
+  margin-left: auto;
 }
-.upload-btn { padding: 9px 18px; }
 
 .theme-toggle {
-  width: 38px;
-  height: 38px;
+  width: 36px;
+  height: 36px;
   display: grid;
   place-items: center;
   border-radius: 50%;
   border: 1px solid var(--border-strong);
   background: var(--surface-2);
   color: var(--text);
-  font-size: 16px;
+  font-size: 15px;
   line-height: 1;
   transition: all 0.2s ease;
 }
 .theme-toggle:hover {
   border-color: var(--accent);
   box-shadow: var(--focus-ring);
-  transform: rotate(15deg);
 }
 .theme-ico { display: inline-block; filter: saturate(1.2); }
 .theme-ico.dim { opacity: 0.7; }
 
 .user-menu-wrap { position: relative; }
 .user-avatar-btn {
-  width: 38px;
-  height: 38px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
   border: 2px solid var(--border-strong);
   overflow: hidden;
@@ -398,55 +215,25 @@ function logout() {
 .drop-enter-active, .drop-leave-active { transition: all 0.2s ease; }
 .drop-enter-from, .drop-leave-to { opacity: 0; transform: translateY(-8px); }
 
-@media (max-width: 900px) {
-  .cat-nav { display: none; }
-}
-
-/* 手机端：单行放不下就压缩次要元素，保证搜索框与右侧操作区完整可见 */
 @media (max-width: 720px) {
   .navbar-inner {
-    height: 60px;
-    gap: 8px;
-    min-width: 0;
-    padding-left: 12px;
-    padding-right: 12px;
+    height: 56px;
+    padding-left: 14px;
+    padding-right: 14px;
   }
-  .logo { gap: 7px; }
-  .logo-mark { width: 30px; height: 30px; font-size: 13px; }
-  .logo-text { font-size: 18px; }
-  /* 音乐只留图标，省 ~55px */
-  .music-link {
-    width: 34px;
-    height: 34px;
-    padding: 0;
-    justify-content: center;
-    flex-shrink: 0;
-  }
-  .music-label { display: none; }
-  .music-link .music-ico { font-size: 16px; }
-  .search-box {
-    flex: 1 1 auto;
-    min-width: 0;
-    max-width: none;
-    margin-left: 0;
-  }
-  .search-input { padding: 8px 10px 8px 12px; font-size: 13px; }
-  .search-btn { width: 32px; height: 36px; }
+  .logo { gap: 8px; }
+  .logo-mark { width: 28px; height: 28px; font-size: 13px; border-radius: 8px; }
+  .logo-text { font-size: 17px; }
   .nav-actions { gap: 6px; }
-  .nav-actions .btn { padding: 8px 12px; font-size: 13px; }
-  /* 管理员发布入口在手机上收进头像菜单（菜单里已有「发布视频」） */
-  .upload-btn { display: none; }
-  .theme-toggle { width: 34px; height: 34px; font-size: 15px; }
-  .user-avatar-btn { width: 34px; height: 34px; }
+  .nav-actions .btn { padding: 7px 12px; font-size: 13px; }
+  .theme-toggle { width: 32px; height: 32px; font-size: 14px; }
+  .user-avatar-btn { width: 32px; height: 32px; }
 }
 
-/* 超小屏（320~400px）：品牌只留图标，给搜索框腾地方 */
 @media (max-width: 400px) {
-  .navbar-inner { gap: 6px; padding-left: 10px; padding-right: 10px; }
   .logo-text { display: none; }
 }
 
-/* 减少透明度的用户偏好：导航玻璃变实底 */
 @media (prefers-reduced-transparency: reduce) {
   .navbar {
     background: var(--nav-bg-solid);

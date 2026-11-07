@@ -1360,7 +1360,7 @@ onBeforeUnmount(() => {
     <aside class="mn-side">
       <div class="mn-logo">
         <span class="mn-logo-mark">♪</span>
-        <span class="mn-logo-text">音乐馆</span>
+        <span class="mn-logo-text">音乐</span>
       </div>
 
       <nav class="mn-nav">
@@ -1481,8 +1481,21 @@ onBeforeUnmount(() => {
           </span>
 
           <span class="col-title">
-            <span class="t-title">{{ x.song.title }}</span>
-            <span class="t-artist">{{ x.song.artist }}</span>
+            <span class="t-art" :style="{ background: coverGradient(x.song.title) }">
+              <img
+                v-if="x.song.hasCover && x.song.coverUrl"
+                :src="x.song.coverUrl"
+                alt=""
+                loading="lazy"
+                decoding="async"
+                @error="$event.target.style.display = 'none'"
+              />
+              <i v-else>♪</i>
+            </span>
+            <span class="t-meta">
+              <span class="t-title">{{ x.song.title }}</span>
+              <span class="t-artist">{{ x.song.artist }}</span>
+            </span>
           </span>
           <span class="col-album">{{ x.song.album }}</span>
           <span class="col-dur">{{ fmtDur(x.song.duration) }}</span>
@@ -3071,4 +3084,291 @@ onBeforeUnmount(() => {
   /* 面板直接出现，不做滑入 */
   .expand-enter-active, .expand-leave-active { transition: none; }
 }
+
+/* ==================================================================
+   Apple Music 皮肤（覆盖层）
+   只覆盖视觉，不改播放逻辑；上面的网易云深色规则全部保留，
+   这里用同优先级、后置的规则覆盖，方便随时回退。
+   ================================================================== */
+.music-page {
+  --mn-bg: #ffffff;
+  --mn-side: #f7f7f9;
+  --mn-bar: rgba(255, 255, 255, 0.86);
+  --mn-accent: #fa243c;
+  --mn-text: #1d1d1f;
+  --mn-dim: #6e6e73;
+  --mn-faint: #86868b;
+  --mn-line: rgba(0, 0, 0, 0.09);
+  --mn-hover: rgba(0, 0, 0, 0.045);
+  inset: 64px 0 0 0;
+  background: var(--mn-bg);
+  color: var(--mn-text);
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display', 'Helvetica Neue', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+html[data-theme='dark'] .music-page {
+  --mn-bg: #000000;
+  --mn-side: #1c1c1e;
+  --mn-bar: rgba(28, 28, 30, 0.82);
+  --mn-text: #f5f5f7;
+  --mn-dim: #a1a1a6;
+  --mn-faint: #8e8e93;
+  --mn-line: rgba(255, 255, 255, 0.1);
+  --mn-hover: rgba(255, 255, 255, 0.07);
+}
+
+/* ---- 侧边栏 ---- */
+.mn-side {
+  flex: 0 0 236px;
+  padding: 20px 10px 104px;
+  gap: 22px;
+  background: var(--mn-side);
+  border-right: 1px solid var(--mn-line);
+}
+.mn-logo { padding: 4px 10px; gap: 10px; }
+.mn-logo-mark {
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  background: linear-gradient(150deg, #ff5d6c, #fa243c);
+  color: #fff;
+  font-size: 15px;
+  box-shadow: 0 2px 10px rgba(250, 36, 60, 0.3);
+}
+.mn-logo-text {
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--mn-text);
+}
+.mn-nav { gap: 2px; }
+.mn-nav-item {
+  gap: 10px;
+  padding: 9px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--mn-dim);
+}
+.mn-nav-item:hover {
+  background: var(--mn-hover);
+  color: var(--mn-text);
+}
+.mn-nav-item.active {
+  background: var(--mn-hover);
+  color: var(--mn-text);
+  font-weight: 600;
+}
+.mn-nav-line { display: none; }
+.mn-nav-icon { width: 18px; height: 18px; color: var(--mn-accent); }
+.mn-nav-count { font-size: 11px; color: var(--mn-faint); }
+
+/* ---- 主区与标题 ---- */
+.mn-main { padding: 30px 36px 116px; }
+.mn-head { margin-bottom: 22px; }
+.mn-head-title h1 {
+  font-size: 32px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+.mn-head-sub { font-size: 13px; color: var(--mn-dim); }
+.mn-search {
+  height: 36px;
+  padding: 0 12px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: rgba(118, 118, 128, 0.12);
+}
+html[data-theme='dark'] .mn-search {
+  background: rgba(118, 118, 128, 0.24);
+}
+.mn-search:focus-within {
+  border-color: rgba(250, 36, 60, 0.55);
+  background: var(--mn-bg);
+}
+.mn-search svg { width: 16px; height: 16px; }
+.mn-search input { width: 220px; font-size: 13px; }
+
+/* ---- 列表 ---- */
+.mn-listhead {
+  grid-template-columns: 40px minmax(0, 1.7fr) minmax(0, 1fr) 56px 104px;
+  gap: 14px;
+  padding: 0 14px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--mn-faint);
+}
+.track {
+  grid-template-columns: 40px minmax(0, 1.7fr) minmax(0, 1fr) 56px 104px;
+  gap: 14px;
+  padding: 8px 14px;
+  border-radius: 8px;
+}
+.track:hover { background: var(--mn-hover); transform: none; }
+.track.active .t-title { color: var(--mn-accent); }
+.t-title { font-size: 14px; font-weight: 500; }
+.t-artist { font-size: 12px; color: var(--mn-dim); }
+.col-album, .col-dur { font-size: 12px; color: var(--mn-dim); }
+.eq i { background: var(--mn-accent); }
+.btn-playnext {
+  padding: 4px 10px;
+  border: 1px solid var(--mn-line);
+  border-radius: 980px;
+  font-size: 11px;
+  color: var(--mn-dim);
+}
+.btn-playnext:hover {
+  border-color: var(--mn-accent);
+  color: var(--mn-accent);
+}
+
+/* ---- 底部播放条 ---- */
+.mn-player {
+  height: 76px;
+  padding: 0 20px;
+  gap: 18px;
+  background: var(--mn-bar);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border-top: 1px solid var(--mn-line);
+}
+.mn-now { width: 280px; }
+.mn-cover {
+  width: 46px;
+  height: 46px;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.06);
+  animation: none;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
+}
+.mn-cover.spinning { animation: none; }
+.mn-cover:hover { box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18); }
+.mn-cover img { border-radius: 6px; }
+.mn-cover-fallback { color: var(--mn-faint); font-size: 18px; }
+.mn-now-title { font-size: 13px; font-weight: 600; }
+.mn-now-artist { font-size: 11px; }
+.mn-btn { width: 32px; height: 32px; color: var(--mn-text); }
+.mn-btn:hover { color: var(--mn-accent); }
+.mn-btn-main {
+  width: 38px;
+  height: 38px;
+  background: var(--mn-accent);
+  color: #fff;
+}
+.mn-btn-main:hover { background: #e01d34; color: #fff; }
+.mn-time { font-size: 11px; color: var(--mn-faint); }
+.mn-range {
+  height: 4px;
+  border-radius: 2px;
+  background: linear-gradient(to right, var(--mn-accent) 0%, var(--mn-accent) var(--pct), rgba(0, 0, 0, 0.14) var(--pct));
+}
+html[data-theme='dark'] .mn-range {
+  background: linear-gradient(to right, var(--mn-accent) 0%, var(--mn-accent) var(--pct), rgba(255, 255, 255, 0.16) var(--pct));
+}
+.mn-range::-webkit-slider-thumb {
+  width: 12px;
+  height: 12px;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+}
+.mn-range::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  background: #fff;
+  border: none;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+}
+.mn-vol { width: 140px; }
+
+/* ---- 弹窗：浅色卡片 ---- */
+.modal {
+  background: rgba(255, 255, 255, 0.98);
+  color: #1d1d1f;
+  border-radius: 20px;
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.35);
+}
+.modal h3 { font-size: 20px; font-weight: 700; letter-spacing: -0.01em; color: #1d1d1f; }
+.modal-sub { color: #6e6e73; }
+.qr-status { color: #6e6e73; }
+.picker-name { color: #1d1d1f; }
+.picker-meta { color: #86868b; }
+.picker-list li:hover { background: rgba(0, 0, 0, 0.045); }
+.btn-kg.ghost { color: #6e6e73; border-color: rgba(0, 0, 0, 0.14); }
+
+/* ---- 全屏播放页：保持深色沉浸，方形封面 ---- */
+.mn-exp { font-family: inherit; }
+.mn-exp-cover {
+  border-radius: 16px;
+  animation: none;
+  box-shadow: 0 30px 100px rgba(0, 0, 0, 0.6);
+}
+.mn-exp-cover.spinning { animation: none; }
+.mn-exp-cover:hover { box-shadow: 0 30px 100px rgba(0, 0, 0, 0.6); }
+.mn-exp-cover img { border-radius: 16px; }
+.mn-exp-btn-main { background: #fff; color: #111; }
+.mn-exp-btn-main:hover { background: rgba(255, 255, 255, 0.9); color: #111; }
+.mn-exp-tool.on { color: #fff; }
+
+/* ---- 响应式 ---- */
+@media (max-width: 900px) {
+  .mn-side { flex-basis: 64px; padding-left: 0; padding-right: 0; }
+  .mn-logo { justify-content: center; padding: 0; }
+  .mn-logo-text { display: none; }
+  .mn-nav-item { justify-content: center; padding: 10px 0; }
+}
+@media (max-width: 720px) {
+  .music-page { inset: 56px 0 0 0; }
+  .mn-main { padding: 20px 16px 108px; }
+  .mn-head-title h1 { font-size: 26px; }
+  .mn-search input { width: 120px; }
+  .mn-now { width: auto; }
+  .mn-player { height: 68px; padding: 0 12px; gap: 10px; }
+  .mn-cover { width: 40px; height: 40px; }
+  .mn-vol { display: none; }
+}
+/* 小屏隐藏了「专辑 / 操作」两列，网格必须同步收成 3 列，
+   否则 1fr 会被挤成几像素，标题整列消失 */
+@media (max-width: 680px) {
+  .mn-listhead, .track { grid-template-columns: 34px minmax(0, 1fr) 50px; }
+}
+
+/* ---- 曲目行专辑缩略图（Apple Music 歌曲列表样式） ---- */
+.track .col-title { flex-direction: row; align-items: center; gap: 12px; }
+.t-art {
+  position: relative;
+  flex: 0 0 auto;
+  width: 38px;
+  height: 38px;
+  border-radius: 6px;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+}
+.t-art img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.t-art i { font-style: normal; font-size: 15px; color: rgba(255, 255, 255, .92); text-shadow: 0 1px 3px rgba(0, 0, 0, .25); }
+.t-meta { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+@media (max-width: 680px) {
+  .track .col-title { gap: 8px; }
+  .t-art { width: 30px; height: 30px; border-radius: 5px; }
+}
+
+/* ---- 暗色细节：次级按钮与弹窗跟随主题 ---- */
+html[data-theme='dark'] .btn-kg.ghost {
+  color: var(--mn-dim);
+  border-color: var(--mn-line);
+}
+html[data-theme='dark'] .modal {
+  background: #1c1c1e;
+  color: #f5f5f7;
+}
+html[data-theme='dark'] .modal h3,
+html[data-theme='dark'] .picker-name { color: #f5f5f7; }
+html[data-theme='dark'] .modal-sub,
+html[data-theme='dark'] .qr-status { color: #a1a1a6; }
+html[data-theme='dark'] .picker-meta { color: #8e8e93; }
+html[data-theme='dark'] .picker-list li:hover { background: rgba(255, 255, 255, .07); }
+html[data-theme='dark'] .mn-search input::placeholder { color: #8e8e93; }
 </style>

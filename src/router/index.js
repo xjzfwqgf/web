@@ -1,13 +1,18 @@
 import { createRouter, createWebHistory } from 'vue-router'
 
+// 站点当前只保留音乐模块：视频相关路由统一重定向到 /music。
+// 视频页面组件仍保留在仓库里，恢复时把下面的 redirect 换回 component 即可。
 const routes = [
-  { path: '/', name: 'home', component: () => import('../views/Home.vue') },
-  { path: '/video/:id', name: 'play', component: () => import('../views/Play.vue') },
-  { path: '/collection/:id', name: 'collection', component: () => import('../views/Collection.vue') },
-  { path: '/search', name: 'search', component: () => import('../views/Search.vue') },
+  { path: '/', redirect: '/music' },
   { path: '/music', name: 'music', component: () => import('../views/Music.vue'), meta: { auth: true } },
-  { path: '/category/:name', name: 'category', component: () => import('../views/Category.vue') },
-  { path: '/upload', name: 'upload', component: () => import('../views/Upload.vue'), meta: { admin: true } },
+
+  // ---- 已下线的视频入口（保留路径，避免旧链接 404） ----
+  { path: '/video/:id', redirect: '/music' },
+  { path: '/collection/:id', redirect: '/music' },
+  { path: '/search', redirect: '/music' },
+  { path: '/category/:name', redirect: '/music' },
+  { path: '/upload', redirect: '/music' },
+
   { path: '/user', name: 'user', component: () => import('../views/UserCenter.vue'), meta: { auth: true } },
   { path: '/login', name: 'login', component: () => import('../views/Login.vue') },
   { path: '/register', name: 'register', component: () => import('../views/Register.vue') },
@@ -24,7 +29,7 @@ const routes = [
       { path: 'danmaku', name: 'admin-danmaku', component: () => import('../views/admin/Danmaku.vue') },
     ],
   },
-  { path: '/:pathMatch(.*)*', redirect: '/' },
+  { path: '/:pathMatch(.*)*', redirect: '/music' },
 ]
 
 const router = createRouter({
@@ -51,10 +56,10 @@ router.beforeEach((to) => {
     return { name: 'login', query: { redirect: to.fullPath } }
   }
   if (to.meta.admin && !(loggedIn() && isAdmin())) {
-    return { name: 'home' }
+    return { name: 'music' }
   }
   if ((to.name === 'login' || to.name === 'register') && loggedIn()) {
-    return { name: 'home' }
+    return { name: 'music' }
   }
 })
 

@@ -34,12 +34,12 @@ onMounted(() => userStore.refresh())
 }
 .app-main {
   flex: 1;
-  padding-top: 76px;
+  padding-top: 64px;
   padding-bottom: 60px;
 }
-/* 手机端导航栏高度收到 60px，主内容同步上移，避免留一条空白 */
+/* 手机端导航栏高度收到 56px，主内容同步上移，避免留一条空白 */
 @media (max-width: 720px) {
-  .app-main { padding-top: 60px; padding-bottom: 40px; }
+  .app-main { padding-top: 56px; padding-bottom: 40px; }
 }
 .app-footer {
   padding: 26px 24px;
