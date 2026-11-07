@@ -1,13 +1,16 @@
 <script setup>
-import { ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { onMounted, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { useUserStore } from '../stores/user'
 import { useThemeStore } from '../stores/theme'
-import { assetUrl } from '../api'
+import { useMusicToolsStore } from '../stores/musicTools'
+import { apiUrl, assetUrl } from '../api'
 
 const router = useRouter()
+const route = useRoute()
 const userStore = useUserStore()
 const themeStore = useThemeStore()
+const musicTools = useMusicToolsStore()
 
 const showUserMenu = ref(false)
 
@@ -15,6 +18,33 @@ function go(v) {
   showUserMenu.value = false
   router.push(v)
 }
+
+/** 头像菜单里的酷狗工具：把动作交给音乐页执行，必要时先跳过去 */
+function runKg(action) {
+  showUserMenu.value = false
+  musicTools.request(action)
+  if (route.name !== 'music') router.push({ name: 'music' })
+}
+
+/** 管理员才需要：查一次酷狗绑定状态，决定菜单里显示「绑定」还是「同步/解绑」 */
+async function refreshKgStatus() {
+  if (!userStore.isAdmin()) return
+  const token = localStorage.getItem('token')
+  try {
+    const res = await fetch(apiUrl('/api/music/status'), {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    })
+    const json = await res.json()
+    if (json && json.code === 0 && json.data) musicTools.kgBound = !!json.data.bound
+  } catch {
+    /* 状态查不到就按未绑定展示，音乐页自己会再查一次 */
+  }
+}
+
+onMounted(refreshKgStatus)
+watch(showUserMenu, (open) => {
+  if (open) refreshKgStatus()
+})
 
 function logout() {
   userStore.logout()
@@ -60,6 +90,15 @@ function logout() {
                 </div>
                 <button class="menu-item" @click="go({ name: 'user' })">👤 个人中心</button>
                 <button v-if="userStore.isAdmin()" class="menu-item admin-item" @click="go({ name: 'admin-dashboard' })">⚙ 后台管理</button>
+                <template v-if="userStore.isAdmin()">
+                  <div class="menu-sep"></div>
+                  <div class="menu-label">酷狗音乐</div>
+                  <button v-if="musicTools.kgBound === false" class="menu-item" @click="runKg('bind')">🎧 绑定酷狗</button>
+                  <template v-else>
+                    <button class="menu-item" @click="runKg('sync')">↻ 同步「我喜欢」</button>
+                    <button class="menu-item" @click="runKg('unbind')">⏏ 解绑酷狗</button>
+                  </template>
+                </template>
                 <div class="menu-sep"></div>
                 <button class="menu-item" @click="logout">↪ 退出登录</button>
               </div>
@@ -210,6 +249,14 @@ function logout() {
 }
 .menu-item:hover { background: var(--surface-3); }
 .menu-item.admin-item { color: var(--accent); }
+.menu-label {
+  padding: 7px 12px 3px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--text-faint);
+  text-transform: uppercase;
+}
 .menu-sep { height: 1px; background: var(--border); margin: 6px 4px; }
 
 .drop-enter-active, .drop-leave-active { transition: all 0.2s ease; }

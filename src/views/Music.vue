@@ -3,6 +3,7 @@ import { ref, computed, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
 import { ElMessage } from 'element-plus'
 import { assetUrl, parseServerTime } from '../api'
 import { useUserStore } from '../stores/user'
+import { useMusicToolsStore } from '../stores/musicTools'
 import { revealFrom } from '../lib/gsap'
 
 // 音乐模块 · 网易云风格页面。
@@ -96,6 +97,9 @@ const expCover = computed(() => {
 
 // ---- 酷狗绑定状态 ----
 const userStore = useUserStore()
+const musicTools = useMusicToolsStore()
+// 头像菜单点的「绑定 / 同步 / 解绑」先暂存在 store 里，等 /status 回来再执行
+const statusReady = ref(false)
 const kg = ref({ bound: false, nickname: '', trackCount: 0, cachedCount: 0, restrictedCount: 0, lastSyncAt: '' })
 const syncing = ref(false)
 const qr = ref({ open: false, key: '', image: '', status: 0, expired: false })
@@ -214,6 +218,10 @@ async function loadStatus() {
     if (json && json.code === 0 && json.data) kg.value = json.data
   } catch {
     /* 状态失败不阻塞 */
+  } finally {
+    statusReady.value = true
+    musicTools.kgBound = !!kg.value.bound
+    runPendingTool()
   }
 }
 
@@ -1061,6 +1069,8 @@ async function openBind() {
     if (!res.ok || json.code !== 0) throw new Error(json.message || `HTTP ${res.status}`)
     qr.value.key = json.data.key
     qr.value.image = json.data.qrImage
+    // 拿到二维码即进入「等待扫码」，否则首轮轮询前会短暂误显示「二维码已过期」
+    qr.value.status = 1
     qrTimer = setInterval(pollQr, 2000)
   } catch (e) {
     closeBind()
@@ -1149,6 +1159,19 @@ async function doUnbind() {
     ElMessage.error(`解绑失败：${e.message}`)
   }
 }
+
+/**
+ * 头像菜单（NavBar）里的酷狗动作：状态就绪后消费一次。
+ * 未绑定时点「同步」就顺手打开扫码弹窗，免得用户还要再找入口。
+ */
+function runPendingTool() {
+  if (!statusReady.value || !musicTools.pending) return
+  const action = musicTools.consume()
+  if (action === 'bind') return openBind()
+  if (action === 'sync') return kg.value.bound ? doSync() : openBind()
+  if (action === 'unbind' && kg.value.bound) return doUnbind()
+}
+watch(() => musicTools.pending, runPendingTool)
 
 /* ---------- 一键下载歌单 ---------- */
 
