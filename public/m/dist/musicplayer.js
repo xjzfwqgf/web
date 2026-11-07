@@ -61,7 +61,13 @@
 
       // ---- 音频引擎：游离的 <audio>（不进 shadow，也不挂进文档） ----
       // 页面会直接往上挂监听、读写属性，所以必须是真元素且常驻。
+      //
+      // ⚠️ crossOrigin 必须在设置 src 之前设：全屏播放页会用 Web Audio 的
+      // MediaElementSource 接频谱，音频是从 API 302 跳到 COS 的跨域资源；
+      // 不带 CORS 时浏览器把媒体标记为 tainted，analyser 全零、输出静音
+      // （进度条照走，就是没声音）。生产 302 与 COS 都已回 ACAO，可走 CORS。
       this.audio = new Audio()
+      this.audio.crossOrigin = 'anonymous'
       this.audio.preload = 'auto'
       this.audio.volume = DEFAULT_VOLUME
       this.audio.setAttribute('playsinline', '')

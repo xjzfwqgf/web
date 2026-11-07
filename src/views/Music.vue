@@ -17,7 +17,7 @@ import { revealFrom } from '../lib/gsap'
 // ?v= 缓存破除：组件脚本直接改 dist、无构建步骤，加版本号避免浏览器沿用旧的已缓存副本
 // （线上不再依赖仓库根那个已丢失的 musicplayer/，改由 web/public/m/dist/musicplayer.js 提供；
 //   v 从 20260906-a 提到 20261031-a，是为了让浏览器丢掉可能缓存过的旧组件/404）
-const MP_SCRIPT = '/m/dist/musicplayer.js?v=20261031-a'
+const MP_SCRIPT = '/m/dist/musicplayer.js?v=20261107-a'
 // 这些是**后端**路径，不是本站路径：线上前后端不同域，必须拼上 VITE_API_BASE
 // （本地开发 VITE_API_BASE 为空，assetUrl 原样返回，仍然走 vite 代理）
 const PLAYLIST_URL = assetUrl('/api/music/tracks')
