@@ -3371,4 +3371,11 @@ html[data-theme='dark'] .qr-status { color: #a1a1a6; }
 html[data-theme='dark'] .picker-meta { color: #8e8e93; }
 html[data-theme='dark'] .picker-list li:hover { background: rgba(255, 255, 255, .07); }
 html[data-theme='dark'] .mn-search input::placeholder { color: #8e8e93; }
+
+/* ---- 管理工具默认收起 ----
+   酷狗绑定 / 同步「我喜欢」/ 解绑 那一排按钮和状态小作文只对管理员有意义，
+   常驻在标题区会把 Apple Music 的干净版式打回后台管理系统。
+   功能本身不动，需要时把 display 改回 flex 即可。 */
+.mn-actions,
+.kg-bar { display: none; }
 </style>
