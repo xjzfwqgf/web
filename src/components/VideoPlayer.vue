@@ -29,6 +29,7 @@ const buffered = ref(0)
 const danmakuEnabled = ref(true)
 const showControls = ref(true)
 const fullscreen = ref(false)
+const isPortrait = ref(false) // 竖屏视频：手机上换 9:16 画幅，避免挤在 16:9 里太小
 const showDanmakuInput = ref(false)
 const playbackRate = ref(1)
 const boosting = ref(false) // 长按右方向键临时加速中
@@ -84,6 +85,15 @@ function togglePlay() {
   if (videoRef.value.paused) videoRef.value.play()
   else videoRef.value.pause()
 }
+// 手机上点画面：控制条隐藏时先唤出控制条，再点才切播放/暂停
+function onVideoClick() {
+  if (!showControls.value) {
+    pokeControls()
+    return
+  }
+  togglePlay()
+  pokeControls()
+}
 function onTimeupdate() {
   // timeupdate 偶尔在元素重挂载/卸载间隙触发，此时 ref 可能已清空，跳过即可
   if (!videoRef.value) return
@@ -129,16 +139,31 @@ function onVolume(v) {
 }
 
 async function toggleFullscreen() {
-  if (!document.fullscreenElement) {
-    await wrapRef.value.requestFullscreen()
-  } else {
-    await document.exitFullscreen()
+  const wrap = wrapRef.value
+  const video = videoRef.value
+  const fsEl = document.fullscreenElement || document.webkitFullscreenElement
+  try {
+    if (!fsEl) {
+      if (wrap?.requestFullscreen) await wrap.requestFullscreen()
+      // iPhone Safari 不支持容器全屏，只能让 <video> 走原生全屏
+      else if (video?.webkitEnterFullscreen) video.webkitEnterFullscreen()
+    } else if (document.exitFullscreen) {
+      await document.exitFullscreen()
+    } else if (document.webkitExitFullscreen) {
+      document.webkitExitFullscreen()
+    }
+  } catch {
+    // 个别浏览器对 div 全屏 reject（权限/不支持），退回视频原生全屏
+    if (video?.webkitEnterFullscreen) video.webkitEnterFullscreen()
   }
 }
 function onFsChange() {
-  fullscreen.value = !!document.fullscreenElement
+  fullscreen.value = !!(document.fullscreenElement || document.webkitFullscreenElement)
   nextTick()
 }
+// iOS 原生视频全屏没有 fullscreenchange，用 webkit 私有事件同步状态
+function onWebkitFsBegin() { fullscreen.value = true }
+function onWebkitFsEnd() { fullscreen.value = false }
 
 function pokeControls() {
   showControls.value = true
@@ -249,10 +274,13 @@ watch(
     playing.value = false
     currentTime.value = 0
     duration.value = 0
+    isPortrait.value = false
   },
 )
 function onLoaded() {
-  duration.value = videoRef.value.duration || 0
+  const el = videoRef.value
+  duration.value = el.duration || 0
+  isPortrait.value = !!(el.videoWidth && el.videoHeight && el.videoHeight > el.videoWidth)
   // 换 src 重新加载后浏览器会把 playbackRate 重置回 1，这里补回用户选的倍速
   applyRate()
   // 地址栏 ?t= 续播：元数据就绪后 seek 过去
@@ -273,6 +301,7 @@ function onDocPointerDown(e) {
 
 onMounted(() => {
   document.addEventListener('fullscreenchange', onFsChange)
+  document.addEventListener('webkitfullscreenchange', onFsChange)
   document.addEventListener('keydown', onKeydown)
   document.addEventListener('keyup', onKeyup)
   document.addEventListener('pointerdown', onDocPointerDown)
@@ -280,6 +309,7 @@ onMounted(() => {
 })
 onBeforeUnmount(() => {
   document.removeEventListener('fullscreenchange', onFsChange)
+  document.removeEventListener('webkitfullscreenchange', onFsChange)
   document.removeEventListener('keydown', onKeydown)
   document.removeEventListener('keyup', onKeyup)
   document.removeEventListener('pointerdown', onDocPointerDown)
@@ -293,7 +323,7 @@ onBeforeUnmount(() => {
   <div
     ref="wrapRef"
     class="player"
-    :class="{ 'is-fullscreen': fullscreen, 'controls-hidden': !showControls }"
+    :class="{ 'is-fullscreen': fullscreen, 'controls-hidden': !showControls, 'is-portrait': isPortrait }"
     @mousemove="onMouseMove"
     @mouseleave="playing && (showControls = false)"
     @contextmenu.prevent
@@ -305,12 +335,16 @@ onBeforeUnmount(() => {
       :poster="poster"
       :muted="muted"
       playsinline
+      webkit-playsinline
+      x5-playsinline
       controlsList="nodownload"
       @play="onPlay"
       @pause="onPause"
       @timeupdate="onTimeupdate"
       @loadedmetadata="onLoaded"
-      @click="togglePlay"
+      @click="onVideoClick"
+      @webkitbeginfullscreen="onWebkitFsBegin"
+      @webkitendfullscreen="onWebkitFsEnd"
       @dragstart.prevent
     ></video>
 
@@ -713,4 +747,37 @@ onBeforeUnmount(() => {
   transition: all 0.15s;
 }
 .dm-pos.active { color: var(--accent); background: var(--accent-soft); }
+
+/* ---------- 手机端 ---------- */
+@media (max-width: 720px) {
+  .player { border-radius: var(--radius-sm); }
+  /* 竖屏视频：窄画幅居中显示，别塞进 16:9 里变成一条 */
+  .player.is-portrait:not(.is-fullscreen) {
+    width: min(100%, calc(72vh * 9 / 16));
+    margin-inline: auto;
+    aspect-ratio: 9 / 16;
+  }
+  .player-play-btn { width: 64px; height: 64px; font-size: 26px; }
+  .controls { padding: 14px 10px 8px; }
+  .controls-row { margin-top: 4px; gap: 6px; }
+  .controls-left, .controls-right { gap: 4px; }
+  .ctl-btn { width: 30px; height: 30px; }
+  /* 手机用系统音量键，省出右侧空间，避免全屏键被挤出屏幕 */
+  .volume-slider { display: none; }
+  .time-text { font-size: 12px; margin-left: 2px; white-space: nowrap; }
+  .rate-btn { min-width: 34px; padding: 0 4px; }
+  .rate-text { font-size: 12px; }
+  .dm-input-bar {
+    bottom: 54px;
+    width: calc(100% - 20px);
+    gap: 6px;
+    padding: 5px 6px 5px 10px;
+  }
+  /* 小屏放不下颜色/位置选项，先保留弹幕输入与发送 */
+  .dm-options { display: none; }
+  .dm-send { padding: 6px 12px; font-size: 13px; }
+}
+@media (max-width: 400px) {
+  .ctl-btn { width: 28px; height: 28px; }
+}
 </style>

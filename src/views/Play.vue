@@ -494,4 +494,15 @@ onBeforeUnmount(() => ctx?.revert())
 @media (max-width: 960px) {
   .play-layout { grid-template-columns: 1fr; }
 }
+
+@media (max-width: 720px) {
+  .play-title { font-size: 19px; margin: 16px 0 10px; }
+  .play-info-bar { gap: 12px; padding: 12px 0; }
+  /* 点赞/收藏/分享三个按钮平分一行，不再挤在作者信息右侧 */
+  .action-bar { width: 100%; gap: 8px; }
+  .action-btn { flex: 1; padding: 9px 10px; font-size: 13px; }
+  .play-description { padding: 14px; }
+  .episode-bar { padding: 12px; }
+  .episode-bar-top { gap: 8px; }
+}
 </style>

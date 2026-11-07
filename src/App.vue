@@ -37,6 +37,10 @@ onMounted(() => userStore.refresh())
   padding-top: 76px;
   padding-bottom: 60px;
 }
+/* 手机端导航栏高度收到 60px，主内容同步上移，避免留一条空白 */
+@media (max-width: 720px) {
+  .app-main { padding-top: 60px; padding-bottom: 40px; }
+}
 .app-footer {
   padding: 26px 24px;
   text-align: center;

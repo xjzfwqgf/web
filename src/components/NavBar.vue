@@ -68,7 +68,7 @@ function logout() {
 
       <router-link to="/music" class="music-link" :class="{ active: route.name === 'music' }">
         <span class="music-ico">🎵</span>
-        <span>音乐</span>
+        <span class="music-label">音乐</span>
       </router-link>
 
       <nav class="cat-nav" v-if="categories.length">
@@ -400,6 +400,50 @@ function logout() {
 
 @media (max-width: 900px) {
   .cat-nav { display: none; }
+}
+
+/* 手机端：单行放不下就压缩次要元素，保证搜索框与右侧操作区完整可见 */
+@media (max-width: 720px) {
+  .navbar-inner {
+    height: 60px;
+    gap: 8px;
+    min-width: 0;
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+  .logo { gap: 7px; }
+  .logo-mark { width: 30px; height: 30px; font-size: 13px; }
+  .logo-text { font-size: 18px; }
+  /* 音乐只留图标，省 ~55px */
+  .music-link {
+    width: 34px;
+    height: 34px;
+    padding: 0;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .music-label { display: none; }
+  .music-link .music-ico { font-size: 16px; }
+  .search-box {
+    flex: 1 1 auto;
+    min-width: 0;
+    max-width: none;
+    margin-left: 0;
+  }
+  .search-input { padding: 8px 10px 8px 12px; font-size: 13px; }
+  .search-btn { width: 32px; height: 36px; }
+  .nav-actions { gap: 6px; }
+  .nav-actions .btn { padding: 8px 12px; font-size: 13px; }
+  /* 管理员发布入口在手机上收进头像菜单（菜单里已有「发布视频」） */
+  .upload-btn { display: none; }
+  .theme-toggle { width: 34px; height: 34px; font-size: 15px; }
+  .user-avatar-btn { width: 34px; height: 34px; }
+}
+
+/* 超小屏（320~400px）：品牌只留图标，给搜索框腾地方 */
+@media (max-width: 400px) {
+  .navbar-inner { gap: 6px; padding-left: 10px; padding-right: 10px; }
+  .logo-text { display: none; }
 }
 
 /* 减少透明度的用户偏好：导航玻璃变实底 */
