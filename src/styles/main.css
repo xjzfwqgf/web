@@ -16,7 +16,7 @@
   /* Apple 墨色 / 灰阶 */
   --text: #1d1d1f;
   --text-dim: #6e6e73;
-  --text-faint: #86868b;
+  --text-faint: #6e6e73;
 
   /* Apple 蓝 + 语义扩展 */
   --accent: #0071e3;
@@ -66,7 +66,7 @@ html[data-theme='dark'] {
 
   --text: #f5f5f7;
   --text-dim: #a1a1a6;
-  --text-faint: #6e6e73;
+  --text-faint: #8e8e93;
 
   --accent: #2997ff;
   --accent-strong: #5ac8fa;

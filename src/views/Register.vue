@@ -47,20 +47,20 @@ async function submit() {
 
       <form class="auth-form" @submit.prevent="submit">
         <div class="field">
-          <label>用户名 <small>3-20 位字母/数字/下划线</small></label>
-          <input v-model="username" class="input" type="text" placeholder="设置用户名" autocomplete="username" />
+          <label for="register-username">用户名 <small>3-20 位字母/数字/下划线</small></label>
+          <input id="register-username" v-model="username" class="input" type="text" name="username" placeholder="设置用户名" autocomplete="username" />
         </div>
         <div class="field">
-          <label>昵称（可选）</label>
-          <input v-model="nickname" class="input" type="text" placeholder="展示给别人的名字" />
+          <label for="register-nickname">昵称（可选）</label>
+          <input id="register-nickname" v-model="nickname" class="input" type="text" name="nickname" placeholder="展示给别人的名字" autocomplete="nickname" />
         </div>
         <div class="field">
-          <label>密码 <small>至少 8 位</small></label>
-          <input v-model="password" class="input" type="password" placeholder="设置密码" autocomplete="new-password" />
+          <label for="register-password">密码 <small>至少 8 位</small></label>
+          <input id="register-password" v-model="password" class="input" type="password" name="password" placeholder="设置密码" autocomplete="new-password" />
         </div>
         <div class="field">
-          <label>确认密码</label>
-          <input v-model="confirm" class="input" type="password" placeholder="再次输入密码" autocomplete="new-password" />
+          <label for="register-confirm">确认密码</label>
+          <input id="register-confirm" v-model="confirm" class="input" type="password" name="confirm" placeholder="再次输入密码" autocomplete="new-password" />
         </div>
         <button class="btn btn-primary auth-submit" type="submit" :disabled="loading">
           {{ loading ? '注册中…' : '注 册' }}

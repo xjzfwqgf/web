@@ -72,12 +72,12 @@ onMounted(async () => {
 
       <form class="auth-form" @submit.prevent="submit">
         <div class="field">
-          <label>用户名</label>
-          <input v-model="username" class="input" type="text" placeholder="请输入用户名" autocomplete="username" />
+          <label for="login-username">用户名</label>
+          <input id="login-username" v-model="username" class="input" type="text" name="username" placeholder="请输入用户名" autocomplete="username" />
         </div>
         <div class="field">
-          <label>密码</label>
-          <input v-model="password" class="input" type="password" placeholder="请输入密码" autocomplete="current-password" />
+          <label for="login-password">密码</label>
+          <input id="login-password" v-model="password" class="input" type="password" name="password" placeholder="请输入密码" autocomplete="current-password" />
         </div>
         <button class="btn btn-primary auth-submit" type="submit" :disabled="loading">
           {{ loading ? '登录中…' : '登 录' }}

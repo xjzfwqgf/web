@@ -107,6 +107,61 @@ let qrTimer = null
 // 认不出「我喜欢」时后端回 409 + 候选歌单，这里弹选择
 const picker = ref({ open: false, candidates: [] })
 
+/* ---------- 弹窗焦点管理（role=dialog 配套） ----------
+   打开时把焦点移进弹窗、锁背景滚动；关闭时还原。Tab 在弹窗内循环，
+   Esc 由 onKeydown 统一处理。 */
+const qrModal = ref(null)
+const pickerModal = ref(null)
+const FOCUSABLE = 'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+const activeModalKey = computed(() => (qr.value.open ? 'qr' : picker.value.open ? 'picker' : ''))
+let focusBeforeModal = null
+let overflowBeforeModal = ''
+
+watch(activeModalKey, async (key, oldKey) => {
+  if (key && !oldKey) {
+    focusBeforeModal = document.activeElement
+    overflowBeforeModal = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+  } else if (!key && oldKey) {
+    document.body.style.overflow = overflowBeforeModal
+  }
+
+  await nextTick()
+
+  if (key) {
+    const modal = key === 'qr' ? qrModal.value : pickerModal.value
+    // 焦点落在对话框本身：读屏会先念标题，Tab 再进入第一个控件
+    if (modal) modal.focus()
+    return
+  }
+
+  if (focusBeforeModal && typeof focusBeforeModal.focus === 'function') focusBeforeModal.focus()
+  focusBeforeModal = null
+})
+
+function trapModalTab(e) {
+  const key = activeModalKey.value
+  if (!key || e.key !== 'Tab') return
+  const modal = key === 'qr' ? qrModal.value : pickerModal.value
+  if (!modal) return
+  const items = Array.from(modal.querySelectorAll(FOCUSABLE)).filter((el) => el.offsetParent !== null)
+  if (!items.length) {
+    e.preventDefault()
+    modal.focus()
+    return
+  }
+  const first = items[0]
+  const last = items[items.length - 1]
+  if (e.shiftKey && (document.activeElement === first || document.activeElement === modal)) {
+    e.preventDefault()
+    last.focus()
+  } else if (!e.shiftKey && document.activeElement === last) {
+    e.preventDefault()
+    first.focus()
+  }
+}
+
+
 // ---- 一键下载歌单 ----
 // 进度是后端的内存态，本页只是它的一个观察者（刷新页面/换标签页都能接着看）
 const dl = ref({ active: false, total: 0, done: 0, failed: 0, cancelled: false, abortReason: '' })
@@ -1049,6 +1104,17 @@ function onWindowResize() {
 }
 
 function onKeydown(e) {
+  // 弹窗打开时：Esc 关闭，Tab 在弹窗内循环（不做背景操作）
+  if (activeModalKey.value) {
+    if (e.key === 'Escape') {
+      e.preventDefault()
+      if (qr.value.open) closeBind()
+      else picker.value.open = false
+    } else {
+      trapModalTab(e)
+    }
+    return
+  }
   if (e.key === 'Escape' && expanded.value) expanded.value = false
 }
 
@@ -1392,6 +1458,7 @@ onBeforeUnmount(() => {
           :key="t.key"
           class="mn-nav-item"
           :class="{ active: navTab === t.key }"
+          :aria-label="t.label"
           @click="pickTab(t.key)"
         >
           <!-- 【新增动画】左侧红色竖线：用 scaleX 从 0 展开（不用 width，避免触发布局） -->
@@ -1421,7 +1488,15 @@ onBeforeUnmount(() => {
                 <circle cx="11" cy="11" r="7" />
                 <path d="m20 20-3.5-3.5" />
               </svg>
-              <input v-model="search" type="text" placeholder="搜索歌曲 / 艺人 / 专辑…" />
+              <label class="sr-only" for="mn-search">搜索歌曲、艺人或专辑</label>
+              <input
+                id="mn-search"
+                v-model="search"
+                type="search"
+                name="search"
+                autocomplete="off"
+                placeholder="搜索歌曲 / 艺人 / 专辑…"
+              />
             </div>
             <span class="mn-count">{{ visibleList.length }} / {{ allSongs.length + lockedSongs.length }}</span>
           </div>
@@ -1503,7 +1578,13 @@ onBeforeUnmount(() => {
             </template>
           </span>
 
-          <span class="col-title">
+          <button
+            type="button"
+            class="col-title t-open"
+            :disabled="x.locked"
+            :aria-label="'播放 ' + x.song.title + ' — ' + x.song.artist"
+            @click.stop="onRowClick(x)"
+          >
             <span class="t-art" :style="{ background: coverGradient(x.song.title) }">
               <img
                 v-if="x.song.hasCover && x.song.coverUrl"
@@ -1519,7 +1600,7 @@ onBeforeUnmount(() => {
               <span class="t-title">{{ x.song.title }}</span>
               <span class="t-artist">{{ x.song.artist }}</span>
             </span>
-          </span>
+          </button>
           <span class="col-album">{{ x.song.album }}</span>
           <span class="col-dur">{{ fmtDur(x.song.duration) }}</span>
 
@@ -1556,9 +1637,11 @@ onBeforeUnmount(() => {
         class="mn-now"
         role="button"
         tabindex="0"
+        aria-label="展开播放页"
         title="展开播放页"
         @click="expanded = true"
         @keydown.enter.prevent="expanded = true"
+        @keydown.space.prevent="expanded = true"
       >
         <!-- 【新增动画】封面：播放中持续旋转，暂停用 animation-play-state 冻结在当前角度
              （不能移除 animation，那样会立刻弹回 0°，看起来是「倒转回去」） -->
@@ -1588,21 +1671,21 @@ onBeforeUnmount(() => {
       <!-- 中：控制按钮组 + 进度条 -->
       <div class="mn-ctrl">
         <div class="mn-btns">
-          <button class="mn-btn" title="上一曲" @click="prevTrack">
+          <button class="mn-btn" title="上一曲" aria-label="上一曲" @click="prevTrack">
             <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h2v12H6zM20 6v12l-9-6z" /></svg>
           </button>
 
-          <button class="mn-btn mn-btn-main" :title="isPlaying ? '暂停' : '播放'" @click="togglePlay">
+          <button class="mn-btn mn-btn-main" :title="isPlaying ? '暂停' : '播放'" :aria-label="isPlaying ? '暂停' : '播放'" @click="togglePlay">
             <svg v-if="isPlaying" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" /></svg>
             <svg v-else viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>
           </button>
 
-          <button class="mn-btn" title="下一曲" @click="nextTrack">
+          <button class="mn-btn" title="下一曲" aria-label="下一曲" @click="nextTrack">
             <svg viewBox="0 0 24 24" fill="currentColor"><path d="M16 6h2v12h-2zM4 6v12l9-6z" /></svg>
           </button>
 
           <!-- 播放模式：图标随模式变化 -->
-          <button class="mn-btn" :title="playModeInfo.label" @click="cycleMode">
+          <button class="mn-btn" :title="playModeInfo.label" :aria-label="playModeInfo.label" @click="cycleMode">
             <svg v-if="playMode === 'list'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M17 2l4 4-4 4" /><path d="M3 11V9a4 4 0 0 1 4-4h14" />
               <path d="M7 22l-4-4 4-4" /><path d="M21 13v2a4 4 0 0 1-4 4H3" />
@@ -1642,7 +1725,7 @@ onBeforeUnmount(() => {
 
       <!-- 右：音量 -->
       <div class="mn-vol">
-        <button class="mn-btn" :title="muted ? '取消静音' : '静音'" @click="toggleMute">
+        <button class="mn-btn" :title="muted ? '取消静音' : '静音'" :aria-label="muted ? '取消静音' : '静音'" @click="toggleMute">
           <svg v-if="muted || volShown === 0" viewBox="0 0 24 24" fill="currentColor">
             <path d="M4 9v6h4l5 4V5L8 9H4z" />
             <path d="m16 9 5 6M21 9l-5 6" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" />
@@ -1705,7 +1788,7 @@ onBeforeUnmount(() => {
               : { background: coverGradient(currentSong && currentSong.title) }"
           ></div>
 
-          <button class="mn-exp-close" title="收起（Esc）" @click="expanded = false">
+          <button class="mn-exp-close" title="收起（Esc）" aria-label="收起播放页" @click="expanded = false">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
               <path d="m6 9 6 6 6-6" />
             </svg>
@@ -1827,20 +1910,21 @@ onBeforeUnmount(() => {
                 放在歌词区下方，是为了让它固定住 —— 歌词滚动时按钮不跟着跑。
               -->
               <div class="mn-exp-ctrl">
-                <button class="mn-exp-btn" title="上一曲" @click="prevTrack">
+                <button class="mn-exp-btn" title="上一曲" aria-label="上一曲" @click="prevTrack">
                   <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h2v12H6zM20 6v12l-9-6z" /></svg>
                 </button>
 
                 <button
                   class="mn-exp-btn mn-exp-btn-main"
                   :title="isPlaying ? '暂停' : '播放'"
+                  :aria-label="isPlaying ? '暂停' : '播放'"
                   @click="togglePlay"
                 >
                   <svg v-if="isPlaying" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" /></svg>
                   <svg v-else viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>
                 </button>
 
-                <button class="mn-exp-btn" title="下一曲" @click="nextTrack">
+                <button class="mn-exp-btn" title="下一曲" aria-label="下一曲" @click="nextTrack">
                   <svg viewBox="0 0 24 24" fill="currentColor"><path d="M16 6h2v12h-2zM4 6v12l9-6z" /></svg>
                 </button>
 
@@ -1880,8 +1964,15 @@ onBeforeUnmount(() => {
       <!-- 扫码绑定弹窗 -->
       <transition name="fade">
         <div v-if="qr.open" class="modal-mask" @click.self="closeBind">
-          <div class="modal">
-            <h3>绑定酷狗账号</h3>
+          <div
+            ref="qrModal"
+            class="modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="qr-modal-title"
+            tabindex="-1"
+          >
+            <h3 id="qr-modal-title">绑定酷狗账号</h3>
             <p class="modal-sub">用手机酷狗 App 扫描二维码。账号全站共用一份，绑定后所有人的曲库都来自它。</p>
             <div class="qr-box">
               <img v-if="qr.image" :src="qr.image" alt="酷狗登录二维码" />
@@ -1902,13 +1993,22 @@ onBeforeUnmount(() => {
       <!-- 「我喜欢」认不出来时的手动选择 -->
       <transition name="fade">
         <div v-if="picker.open" class="modal-mask">
-          <div class="modal">
-            <h3>选择「我喜欢」歌单</h3>
+          <div
+            ref="pickerModal"
+            class="modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="picker-modal-title"
+            tabindex="-1"
+          >
+            <h3 id="picker-modal-title">选择「我喜欢」歌单</h3>
             <p class="modal-sub">没能在你的歌单里认出「我喜欢」。选一个作为曲库来源吧，选完会记住。</p>
             <ul class="picker-list">
-              <li v-for="p in picker.candidates" :key="p.id" @click="doSync(p.id)">
-                <span class="picker-name">{{ p.name }}</span>
-                <span class="picker-meta">{{ p.songCount || '?' }} 首</span>
+              <li v-for="p in picker.candidates" :key="p.id">
+                <button type="button" class="picker-item" @click="doSync(p.id)">
+                  <span class="picker-name">{{ p.name }}</span>
+                  <span class="picker-meta">{{ p.songCount || '?' }} 首</span>
+                </button>
               </li>
             </ul>
             <button class="btn-kg ghost" @click="picker.open = false">取消</button>
@@ -1947,6 +2047,19 @@ onBeforeUnmount(() => {
   background: var(--mn-bg);
   color: var(--mn-text);
   font-size: 14px;
+}
+
+/* 只给读屏的标签（搜索框等） */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 /* ---------------- 侧边栏 ---------------- */
@@ -2592,17 +2705,24 @@ onBeforeUnmount(() => {
 .qr-expired p { margin: 0; }
 .qr-status { min-height: 20px; margin: 0 0 16px; font-size: 12px; color: #9a9a9a; }
 .picker-list { list-style: none; margin: 0 0 16px; padding: 0; max-height: 260px; overflow-y: auto; }
-.picker-list li {
+.picker-item {
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: 12px;
+  width: 100%;
   padding: 11px 14px;
+  border: 0;
   border-radius: 10px;
+  background: none;
+  font: inherit;
+  color: inherit;
+  text-align: left;
   cursor: pointer;
   transition: background 0.15s;
 }
-.picker-list li:hover { background: rgba(255, 255, 255, 0.06); }
+.picker-item:hover { background: rgba(255, 255, 255, 0.06); }
+.picker-item:focus-visible { outline: 2px solid var(--mn-accent); outline-offset: -2px; }
 .picker-name { font-size: 14px; font-weight: 600; }
 .picker-meta { font-size: 12px; color: #6a6a6a; }
 
@@ -2675,7 +2795,7 @@ onBeforeUnmount(() => {
   align-items: center;
   justify-content: center;
   gap: clamp(40px, 7vw, 110px);
-  padding: 80px clamp(32px, 6vw, 96px);
+  padding: 80px clamp(32px, 6vw, 96px) calc(80px + env(safe-area-inset-bottom, 0px));
 }
 
 /* 右上角收起按钮 */
@@ -3044,7 +3164,7 @@ onBeforeUnmount(() => {
     flex-direction: column;
     justify-content: flex-start;
     gap: 26px;
-    padding: 70px 24px 32px;
+    padding: 70px 24px calc(32px + env(safe-area-inset-bottom, 0px));
   }
   .mn-exp-cover {
     width: min(50vw, 220px);
@@ -3120,7 +3240,7 @@ onBeforeUnmount(() => {
   --mn-accent: #fa243c;
   --mn-text: #1d1d1f;
   --mn-dim: #6e6e73;
-  --mn-faint: #86868b;
+  --mn-faint: #6e6e73;
   --mn-line: rgba(0, 0, 0, 0.09);
   --mn-hover: rgba(0, 0, 0, 0.045);
   inset: 64px 0 0 0;
@@ -3188,7 +3308,7 @@ html[data-theme='dark'] .music-page {
 .mn-nav-count { font-size: 11px; color: var(--mn-faint); }
 
 /* ---- 主区与标题 ---- */
-.mn-main { padding: 30px 36px 116px; }
+.mn-main { padding: 30px 36px calc(116px + env(safe-area-inset-bottom, 0px)); }
 .mn-head { margin-bottom: 22px; }
 .mn-head-title h1 {
   font-size: 32px;
@@ -3229,6 +3349,10 @@ html[data-theme='dark'] .mn-search {
   gap: 14px;
   padding: 8px 14px;
   border-radius: 8px;
+  /* 列表最多 1400+ 行：让浏览器跳过视口外行的布局/绘制，滚动时再按需渲染。
+     contain-intrinsic-size 的 auto 会记住每行真实高度，不会出现滚动条跳动。 */
+  content-visibility: auto;
+  contain-intrinsic-size: auto 56px;
 }
 .track:hover { background: var(--mn-hover); transform: none; }
 .track.active .t-title { color: var(--mn-accent); }
@@ -3250,8 +3374,8 @@ html[data-theme='dark'] .mn-search {
 
 /* ---- 底部播放条 ---- */
 .mn-player {
-  height: 76px;
-  padding: 0 20px;
+  height: calc(76px + env(safe-area-inset-bottom, 0px));
+  padding: 0 20px env(safe-area-inset-bottom, 0px);
   gap: 18px;
   background: var(--mn-bar);
   backdrop-filter: blur(24px) saturate(180%);
@@ -3317,7 +3441,7 @@ html[data-theme='dark'] .mn-range {
 .modal-sub { color: #6e6e73; }
 .qr-status { color: #6e6e73; }
 .picker-name { color: #1d1d1f; }
-.picker-meta { color: #86868b; }
+.picker-meta { color: #6e6e73; }
 .picker-list li:hover { background: rgba(0, 0, 0, 0.045); }
 .btn-kg.ghost { color: #6e6e73; border-color: rgba(0, 0, 0, 0.14); }
 
@@ -3344,11 +3468,11 @@ html[data-theme='dark'] .mn-range {
 }
 @media (max-width: 720px) {
   .music-page { inset: 56px 0 0 0; }
-  .mn-main { padding: 20px 16px 108px; }
+  .mn-main { padding: 20px 16px calc(108px + env(safe-area-inset-bottom, 0px)); }
   .mn-head-title h1 { font-size: 26px; }
   .mn-search input { width: 120px; }
   .mn-now { width: auto; }
-  .mn-player { height: 68px; padding: 0 12px; gap: 10px; }
+  .mn-player { height: calc(68px + env(safe-area-inset-bottom, 0px)); padding: 0 12px env(safe-area-inset-bottom, 0px); gap: 10px; }
   .mn-cover { width: 40px; height: 40px; }
   .mn-vol { display: none; }
 }
@@ -3360,6 +3484,20 @@ html[data-theme='dark'] .mn-range {
 
 /* ---- 曲目行专辑缩略图（Apple Music 歌曲列表样式） ---- */
 .track .col-title { flex-direction: row; align-items: center; gap: 12px; }
+/* 标题区是行的主操作按钮：鼠标点整行仍有效，键盘用户 Tab 到这里按 Enter/空格播放 */
+.t-open {
+  width: 100%;
+  display: flex;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.t-open:disabled { cursor: default; }
+.t-open:focus-visible { outline: 2px solid var(--mn-accent); outline-offset: 2px; }
 .t-art {
   position: relative;
   flex: 0 0 auto;
@@ -3392,7 +3530,7 @@ html[data-theme='dark'] .picker-name { color: #f5f5f7; }
 html[data-theme='dark'] .modal-sub,
 html[data-theme='dark'] .qr-status { color: #a1a1a6; }
 html[data-theme='dark'] .picker-meta { color: #8e8e93; }
-html[data-theme='dark'] .picker-list li:hover { background: rgba(255, 255, 255, .07); }
+html[data-theme='dark'] .picker-item:hover { background: rgba(255, 255, 255, .07); }
 html[data-theme='dark'] .mn-search input::placeholder { color: #8e8e93; }
 
 /* ---- 管理工具默认收起 ----
