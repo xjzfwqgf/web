@@ -41,7 +41,7 @@ async function submit() {
 <template>
   <div class="auth-page">
     <div class="auth-card fade-in">
-      <div class="auth-logo">▶</div>
+      <img class="auth-logo" src="/logo.png" alt="" />
       <h1 class="display-title auth-title">加入夜场</h1>
       <p class="eyebrow auth-sub">JOIN NIGHTSHOW</p>
 
@@ -104,16 +104,12 @@ async function submit() {
   pointer-events: none;
 }
 .auth-logo {
-  width: 52px;
-  height: 52px;
-  display: grid;
-  place-items: center;
+  width: 64px;
+  height: 64px;
+  display: block;
   margin: 0 auto 18px;
-  border-radius: var(--radius-sm);
-  background: var(--accent);
-  color: var(--accent-text);
-  font-size: 22px;
-  box-shadow: 0 6px 24px var(--accent-glow);
+  object-fit: contain;
+  filter: drop-shadow(0 8px 24px rgba(250, 36, 60, 0.2));
 }
 .auth-title { text-align: center; font-size: 30px; }
 .auth-sub { text-align: center; margin: 8px 0 30px; }

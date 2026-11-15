@@ -1448,7 +1448,7 @@ onBeforeUnmount(() => {
     <!-- ==================== 侧边栏 ==================== -->
     <aside class="mn-side">
       <div class="mn-logo">
-        <span class="mn-logo-mark">♪</span>
+        <img class="mn-logo-mark" src="/logo.png" alt="" />
         <span class="mn-logo-text">音乐</span>
       </div>
 
@@ -2080,14 +2080,11 @@ onBeforeUnmount(() => {
   padding: 0 20px;
 }
 .mn-logo-mark {
-  width: 30px;
-  height: 30px;
-  display: grid;
-  place-items: center;
-  border-radius: 50%;
-  background: var(--mn-accent);
-  color: #fff;
-  font-size: 16px;
+  width: 32px;
+  height: 32px;
+  display: block;
+  object-fit: contain;
+  flex-shrink: 0;
 }
 .mn-logo-text {
   font-size: 17px;
@@ -3271,13 +3268,11 @@ html[data-theme='dark'] .music-page {
 }
 .mn-logo { padding: 4px 10px; gap: 10px; }
 .mn-logo-mark {
-  width: 30px;
-  height: 30px;
-  border-radius: 9px;
-  background: linear-gradient(150deg, #ff5d6c, #fa243c);
-  color: #fff;
-  font-size: 15px;
-  box-shadow: 0 2px 10px rgba(250, 36, 60, 0.3);
+  width: 32px;
+  height: 32px;
+  display: block;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 6px rgba(250, 36, 60, 0.16));
 }
 .mn-logo-text {
   font-size: 17px;

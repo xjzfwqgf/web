@@ -57,7 +57,7 @@ function logout() {
   <header class="navbar">
     <div class="container navbar-inner">
       <router-link to="/music" class="logo">
-        <span class="logo-mark">♪</span>
+        <img class="logo-mark" src="/logo.png" alt="" />
         <span class="logo-text">夜场音乐</span>
       </router-link>
 
@@ -143,15 +143,12 @@ function logout() {
   flex-shrink: 0;
 }
 .logo-mark {
-  width: 32px;
-  height: 32px;
-  display: grid;
-  place-items: center;
-  border-radius: 9px;
-  background: linear-gradient(150deg, #ff5d6c, #fa243c);
-  color: #fff;
-  font-size: 15px;
-  box-shadow: 0 2px 10px rgba(250, 36, 60, 0.28);
+  width: 34px;
+  height: 34px;
+  display: block;
+  object-fit: contain;
+  flex-shrink: 0;
+  filter: drop-shadow(0 2px 6px rgba(250, 36, 60, 0.16));
 }
 .logo-text {
   font-family: var(--font-display);
@@ -269,7 +266,7 @@ function logout() {
     padding-right: 14px;
   }
   .logo { gap: 8px; }
-  .logo-mark { width: 28px; height: 28px; font-size: 13px; border-radius: 8px; }
+  .logo-mark { width: 30px; height: 30px; }
   .logo-text { font-size: 17px; }
   .nav-actions { gap: 6px; }
   .nav-actions .btn { padding: 7px 12px; font-size: 13px; }

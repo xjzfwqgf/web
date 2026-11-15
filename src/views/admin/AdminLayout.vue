@@ -18,7 +18,7 @@ const menus = [
   <div class="admin-layout">
     <aside class="admin-side">
       <router-link to="/" class="admin-brand">
-        <span class="admin-logo">▶</span>
+        <img class="admin-logo" src="/logo.png" alt="" />
         <div>
           <div class="admin-brand-name">夜场后台</div>
           <div class="admin-brand-sub">NIGHTSHOW CONSOLE</div>
@@ -80,15 +80,12 @@ const menus = [
   padding: 4px 8px;
 }
 .admin-logo {
-  width: 38px;
-  height: 38px;
-  display: grid;
-  place-items: center;
-  border-radius: var(--radius-xs);
-  background: var(--accent);
-  color: var(--accent-text);
-  font-size: 16px;
-  box-shadow: 0 4px 14px var(--accent-glow);
+  width: 40px;
+  height: 40px;
+  display: block;
+  object-fit: contain;
+  flex-shrink: 0;
+  filter: drop-shadow(0 4px 12px rgba(250, 36, 60, 0.2));
 }
 .admin-brand-name { font-weight: 900; font-size: 16px; }
 .admin-brand-sub {
